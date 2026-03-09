@@ -5,12 +5,10 @@ from abc import ABC, abstractmethod
 from langchain_core.prompts import ChatPromptTemplate
 from langsmith import Client
 
-from domain.models import SearchContext
+from domain.models import SearchContext, FilterDto
 from application.prompts import RagMainPromptProvider
 
 from config import Settings, get_settings
-
-NB_PRODUCT_SHOW = 5
 
 class FilterStatusStrategy(ABC):
     
@@ -131,23 +129,31 @@ class LangsmithSearchResponseBuilderPromptProvider(RagMainPromptProvider):
         rag_prompt:ChatPromptTemplate = self.client.pull_prompt(self.prompt_name)
 
         # {product_name}
-        product_name = search_context.detected_attribute_set.term
+        product_name = search_context.search_term
 
         # {nb_products}
         nb_products = search_context.search_total_count
 
         # {nb_product_show}
-        nb_product_show = NB_PRODUCT_SHOW
+        nb_product_show = search_context.max_products
 
         # {product_list_show}
         product_list_show = '\n'.join([
             f"\t* {item.name} - {item.price}" 
             for item in search_context.search_result[:nb_product_show]
         ])
-        # {all_filters}
+
+        # {all_filters} - combine used and available filters, deduplicate by code
+        all_filters_dict: dict[str, FilterDto] = {}
+        for f in search_context.search_used_filters:
+            all_filters_dict[f.code] = f
+        for f in search_context.search_available_filters:
+            if f.code not in all_filters_dict:
+                all_filters_dict[f.code] = f
+        
         all_filters = "\n".join([
-            f"\t* {f.label}"
-            for f in search_context.attribute_sets[0].filters
+            f"\t* {filter.label}"
+            for filter in all_filters_dict.values()
         ])
 
         # {detected_filters}
@@ -163,12 +169,14 @@ class LangsmithSearchResponseBuilderPromptProvider(RagMainPromptProvider):
         for strategy in self.filter_information_strategies:
             if strategy.apply(nb_detected_filters, nb_used_filters):
                 filters_information = strategy.get_filter_information(search_context)
+                break
         
         # {instructions}
         instructions = ""
         for strategy in self.instructions_strategies:
             if strategy.apply(nb_products):
                 instructions = strategy.get_instructions()
+                break
 
         rag_prompt = rag_prompt.partial(
             product_name=product_name,

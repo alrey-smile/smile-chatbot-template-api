@@ -7,9 +7,7 @@ from urllib.parse import urlparse, urlunparse
 from domain.models import (
     FilteredSearchApiResponse,
     SearchApiResponse, 
-    AttributeFilterValue, 
-    ProductFilterDetectionResult, 
-    AttributeFilterDto,
+    FilterValue,
     SearchContext
 )
 from domain.fields import PriceRangeField
@@ -42,24 +40,24 @@ class ElasticSuiteSearchClient(ConversationalSearchClient):
         self.headers = {
             x_correlation_id_key: x_correlation_id_value,
             content_type_key: content_type_value,
-            "Store": "lamaison",
+            "Store": settings.elasticsuite_magento_store_code
         }
         self.graphql_factory = ElasticSuiteGraphqlQueryFactory()
 
-    def search(self, 
-            filter_detection_result:ProductFilterDetectionResult,
-            filters_dto:List[AttributeFilterDto],
+    def search(
+            self, 
             context:SearchContext,
-            page_size: int = 10) -> FilteredSearchApiResponse:
-        valued_detected_filters = [f for f in filter_detection_result.detected_filters if self.__is_valued(f.value)]
+            term:str,
+            filters:List[FilterValue], 
+            page_size: int = 10
+        ) -> FilteredSearchApiResponse:
 
         # Searching only with 'term'
-        if not valued_detected_filters:
-            response = self.search_products(
-                valued_detected_filters, 
-                filters_dto, 
-                filter_detection_result.search_term, 
+        if not filters:
+            response = self._do_search(
                 context,
+                term,
+                [],
                 page_size)
             context.search_used_filters = []
             return FilteredSearchApiResponse.build_from_search_api_response(
@@ -69,16 +67,15 @@ class ElasticSuiteSearchClient(ConversationalSearchClient):
             )
         
         # Search with all
-        response = self.search_products(
-            valued_detected_filters, 
-            filters_dto, 
-            filter_detection_result.search_term, 
+        response = self._do_search(
             context,
+            term,
+            filters,
             page_size)
         
         # TODO: manage search error (no total_count)
         if response.total_count > 0:
-            context.search_used_filters = context.get_valued_filters()
+            context.search_used_filters = filters
             return FilteredSearchApiResponse.build_from_search_api_response(
                 response=response,
                 filter_name=None,
@@ -88,18 +85,16 @@ class ElasticSuiteSearchClient(ConversationalSearchClient):
         best_response = None
         best_score = -1
 
-        filter_selection_strategy = OneFilterSelectionStrategy(valued_detected_filters)
+        filter_selection_strategy = OneFilterSelectionStrategy(filters)
         search_selected_filters = []
         
         while filter_selection_strategy.has_next():
             not_selected_filters, selected_filters = filter_selection_strategy.next() # invert result so we want all the rest filters
-            response = self.search_products(
-                detected_filters=selected_filters,
-                filters_dto=filters_dto,
-                search_term=filter_detection_result.search_term,
-                context=context,
-                page_size=page_size,
-            )
+            response = self._do_search(
+                context,
+                term,
+                selected_filters,
+                page_size)
             score = response.total_count
             if (best_response is None or score > best_score) and response.total_count > 0:
                 best_response = FilteredSearchApiResponse.build_from_search_api_response(
@@ -118,13 +113,11 @@ class ElasticSuiteSearchClient(ConversationalSearchClient):
 
         while filter_selection_strategy.has_next():
             selected_filters, _ = filter_selection_strategy.next()
-            response = self.search_products(
-                detected_filters=selected_filters,
-                filters_dto=filters_dto,
-                search_term=filter_detection_result.search_term,
-                context=context,
-                page_size=page_size,
-            )
+            response = self._do_search(
+                context,
+                term,
+                selected_filters,
+                page_size)
             score = response.total_count
             if (best_response is None or score > best_score) and response.total_count > 0:
                 best_response = FilteredSearchApiResponse.build_from_search_api_response(
@@ -136,11 +129,10 @@ class ElasticSuiteSearchClient(ConversationalSearchClient):
                 search_selected_filters = selected_filters
         
         if best_score <= 0:
-            response = self.search_products(
-                [], 
-                filters_dto, 
-                filter_detection_result.search_term, 
+            response = self._do_search(
                 context,
+                term,
+                [],
                 page_size)
             context.search_used_filters = []
             return FilteredSearchApiResponse.build_from_search_api_response(
@@ -152,18 +144,16 @@ class ElasticSuiteSearchClient(ConversationalSearchClient):
             context.search_used_filters = search_selected_filters
             return best_response
 
-    def search_products(
-            self,
-            detected_filters:List[AttributeFilterValue],
-            filters_dto:List[AttributeFilterDto], #attribute_set: str, term:str, filters: List[AttributeFilterValue],
-            search_term:str, 
-            context:SearchContext,
-            page_size: int = 10) -> SearchApiResponse:
-        
+    def _do_search(
+        self,
+        context:SearchContext,
+        search_term:str, 
+        filters:List[FilterValue],
+        page_size: int = 10) -> SearchApiResponse:
+
         json_data = self.graphql_factory.build_data(
-            detected_filters=detected_filters, 
-            filters_dto=filters_dto,
             search_term=search_term,
+            filters=filters, 
             page_size=page_size
         )
 
@@ -181,12 +171,3 @@ class ElasticSuiteSearchClient(ConversationalSearchClient):
         parsed = urlparse(url)
         netloc = f"{credentials}@{parsed.hostname}" + (f":{parsed.port}" if parsed.port else "")
         return urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
-
-    def __is_valued(self, filter_value):
-        if isinstance(filter_value, dict):
-            # handle case where PriceRangeField is represented as dict
-            min_price = filter_value.get("min_price") or 0
-            max_price = filter_value.get("max_price") or 0
-            return max_price > 0 or min_price > 0
-        else:
-            return True if filter_value else False

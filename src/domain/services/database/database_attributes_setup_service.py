@@ -1,7 +1,7 @@
 from typing import List
 from abc import ABC, abstractmethod
 
-from domain.models import AttributeSetDto, AttributeFilterDto
+from domain.models import AttributeSetDto, AttributeFilterDto, FilterDto
 
 class DatabaseAttributesSetupService(ABC):
     """Contract for persisting attribute sets and their filters.
@@ -38,5 +38,10 @@ class DatabaseAttributesSetupService(ABC):
     
     @abstractmethod
     def get_filters(self, attribute_set_id:int) -> List[AttributeFilterDto]:
+        """Return the filters associated with `attribute_set_id`."""
+        pass
+    
+    @abstractmethod
+    def get_all_filters(self) -> List[FilterDto]:
         """Return the filters associated with `attribute_set_id`."""
         pass

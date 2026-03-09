@@ -5,11 +5,11 @@ Ensure you have the following:
 1. **Azure Account** 
 2. **Azure CLI** installed - [Download here](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
 3. **GitHub Repository** - Your FastAPI app should be in a GitHub repo.
-4. **Python 3.10** installed locally.
+4. **Python 3.11** installed locally.
 
 ### Create an App Service on Azure
 - Name: **maya-dev-api**
-- Runtime Stack: Python - 3.10
+- Runtime Stack: Python - 3.11
 - App Service Plan: Basic (B1)
 - SCM Basic Auth Publishing Credentials: On (*Settings > Configuration > SCM Basic Auth Publishing Credentials*)
 - Startup Command (*Settings > Configuration > Stack settings > Startup command*): 
@@ -415,7 +415,7 @@ To send the request, you first *Get New Access Token* (Authorization tab) -> *Us
             - name: Setup Python
                 uses: actions/setup-python@v4
                 with:
-                    python-version: '3.10'
+                    python-version: '3.11'
 
             - name: Install Dependencies
                 run: |

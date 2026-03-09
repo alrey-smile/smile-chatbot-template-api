@@ -24,7 +24,7 @@ FastAPI service that exposes a Bot Framework-compatible chat endpoint backed by 
 - `docs/`: Supplementary guides for local setup, configuration, and deployment.
 
 ## Prerequisites
-- Python 3.10+ (3.11 used in the Docker image) with `pip` and `python3-venv`.
+- Python 3.11+ (3.11 used in the Docker image) with `pip` and `python3-venv`.
 - Azure resources (OpenAI, AI Search, Cosmos DB, App Configuration, Key Vault) with credentials exposed through environment variables.
 - GCP resources (Vertex, Firestore, GCS)
 - Prompts deployed in LangSmith platform (provide a LangSmith key) 

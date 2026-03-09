@@ -45,7 +45,7 @@ class QuestionsSummarizerAgent:
 
         prompt_template = self.prompt_provider.get_prompt(context)
         
-        new_questions = [f"- [Product: {question.attribute_set_name}] -> {question.ai_question}" for question in questions]
+        new_questions = [f"- [Product: {question.search_term}] -> {question.ai_question}" for question in questions]
 
         new_message = '\n'.join(new_questions)
         prompt_template.append(new_message)

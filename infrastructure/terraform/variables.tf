@@ -29,7 +29,7 @@ variable "app_service_name" {
 variable "python_version" {
     description = "Python version for the runtime"
     type        = string
-    default     = "3.10"
+    default     = "3.11"
 }
 
 # New variable for app settings

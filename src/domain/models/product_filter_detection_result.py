@@ -1,13 +1,10 @@
 from typing import List
 from dataclasses import dataclass
 
-from domain.models import AttributeFilterValue
+from domain.models import FilterValue
 
 @dataclass
 class ProductFilterDetectionResult:
-    attribute_set_name:str
-    attribute_set_code:str
-    attribute_set_id:int
     search_term:str
     ai_question:str
-    detected_filters:List[AttributeFilterValue]
+    detected_filters:List[FilterValue]

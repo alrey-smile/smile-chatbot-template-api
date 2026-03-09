@@ -6,7 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from domain.models import SearchContext
 from domain.ai import LlmProvider
-from domain.fields import AttributeField
+from domain.fields import AttributeSetField
 
 from application.prompts import PromptProvider
 
@@ -25,7 +25,7 @@ class AttributeSetExtractionAgent:
         self.settings = settings
         self.llm_agent = llm_agent
         self.prompt_provider = prompt_provider
-        self.pydantic_object = AttributeField
+        self.pydantic_object = AttributeSetField
 
     def invoke(self, context:SearchContext):
         """Return structured attribute data parsed from the LLM response for a user query."""

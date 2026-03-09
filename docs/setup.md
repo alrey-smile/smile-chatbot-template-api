@@ -14,7 +14,7 @@ Install required packages using `requirements.txt` file.
 
 **Ctrl+Shift-P** > *Python: Create Environment*
 
-- Select Python installation (3.10.x)
+- Select Python installation (3.11.x)
 - Select the requirements file
 - Delete and recreate existing environment
 

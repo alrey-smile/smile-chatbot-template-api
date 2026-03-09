@@ -6,7 +6,7 @@ class UserRequestDto:
     id:str
     user_id:str
     session_id:str
-    attribute_id:str
+    search_term:str
     data:dict
 
     def to_dict(self):
@@ -14,7 +14,7 @@ class UserRequestDto:
             "id": self.id,
             "user_id": self.user_id,
             "session_id": self.session_id,
-            "attribute_id": self.attribute_id,
+            "search_term": self.search_term,
             "data": self.data or {}
         }
     
@@ -23,6 +23,6 @@ class UserRequestDto:
             id=document["id"],
             user_id=document["user_id"],
             session_id=document["session_id"],
-            attribute_id=document["attribute_id"],
+            search_term=document["search_term"],
             data=document.get("data", {}) or {}
         )

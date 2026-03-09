@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 from langchain_core.prompts import ChatPromptTemplate
 
 from domain.ai import LlmProvider
-from domain.models import UserRequestDto, SearchResponseItem, SearchContext, AttributeFilterDto
+from domain.models import SearchResponseItem, SearchContext, FilterValue
 
 from application.prompts import StaticPromptProvider
 
@@ -32,11 +31,12 @@ class SearchResponseBuilderAgent(ABC):
             message_type = "Assistant" if message.type == "ai" else "User"
             exchange_list.append(f"- {message_type}: {message.data.content}")
 
-        for request in context.requests:
-            request_items.extend([
-                f"- {self.build_filter_value_expression(request, self.__find_filter(key, request, context))}" 
-                for key in request.data.keys()
-            ])
+        for request_chain in context.request_chain_results:
+            if request_chain.search_term == context.search_term:
+                request_items.extend([
+                    f"- {self.build_filter_value_expression(filter)}" 
+                    for filter in request_chain.detected_filters
+                ])
 
         result_components = [
             "Filters:\n" + '\n'.join(request_items),
@@ -59,16 +59,8 @@ class SearchResponseBuilderAgent(ABC):
         output = self.llm_provider.invoke(messages)
         return output.content
     
-    def __find_filter(self, filter_code:str, request:UserRequestDto, context:SearchContext):
-        """Locate the filter metadata matching a request attribute."""
-        attribute_set = next((attr for attr in context.attribute_sets if attr.attribute_set_id == request.attribute_id), None)
-        if attribute_set:
-            filter = next((f for f in attribute_set.filters if f.code == filter_code), None)
-            return filter
-        raise KeyError(f"No filter found ({filter_code})")
-    
     @abstractmethod
-    def build_filter_value_expression(self, request:UserRequestDto, filter:AttributeFilterDto):
+    def build_filter_value_expression(self, filter:FilterValue):
         """Return a string describing the request/filter pair for LLM consumption."""
         pass
         

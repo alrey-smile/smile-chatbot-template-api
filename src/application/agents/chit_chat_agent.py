@@ -2,6 +2,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
+from langchain_core.prompts import ChatPromptTemplate
 
 from config import Settings, get_settings
 from domain.ai import LlmProvider
@@ -34,20 +35,27 @@ class ChitChatAgent:
         format_instructions = output_parser.get_format_instructions()
         
         # Pass context to get language-aware prompt
-        prompt_template = self.prompt_provider.get_prompt(context)
+        prompt_template: ChatPromptTemplate = self.prompt_provider.get_prompt(context)
         
-        # Build exchange list
+        # Build conversation history for context
         exchange_list = []
         for message in context.message_thread:
             message_type = "Assistant" if message.type == "ai" else "User"
             exchange_list.append(f"- {message_type}: {message.data.content}")
-
-        new_message = ("human", '\n'.join(exchange_list))
-        prompt_template.append(new_message)
-
+        
+        conversation_history = '\n'.join(exchange_list)
+        
+        # Get only the last user message for chit-chat evaluation
+        last_user_message = context.input_message
+        
+        # Get the output language from context
+        output_language = context.chat_lang.lang_name if context.chat_lang else "English"
+        
         messages = prompt_template.format_messages(
-            question=new_message,
-            format_instructions=format_instructions
+            conversation_history=conversation_history,
+            last_user_message=last_user_message,
+            format_instructions=format_instructions,
+            output_language=output_language
         )
         
         output = self.llm_agent.invoke(messages)

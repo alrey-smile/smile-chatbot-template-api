@@ -1,16 +1,16 @@
-from typing import Annotated
+from typing import Annotated, Tuple
 from fastapi import Depends
 
-from domain.models import SearchContext, FilteredSearchApiResponse
+from domain.models import SearchContext, FilteredSearchApiResponse, FilterDto
 from domain.api_client import ConversationalSearchClient
 from domain.logger import ContextLogger
 
-from application.agents import QuestionsSummarizerAgent, SearchResponseBuilderAgent
+from application.agents import QuestionsSummarizerAgent, SearchResponseBuilderAgent, SearchTermExtractionAgent
 
 from dependencies import (
     inject_conversational_search_api, 
     inject_logger, 
-    inject_search_response_agent
+    inject_search_response_agent,
 )
 
 class SearchManager:
@@ -19,16 +19,29 @@ class SearchManager:
     def __init__(
             self,
             summarize_question_agent : Annotated[QuestionsSummarizerAgent, Depends(QuestionsSummarizerAgent)],
+            search_term_extraction_agent: Annotated[SearchTermExtractionAgent, Depends(SearchTermExtractionAgent)],
             search_response_agent: Annotated[SearchResponseBuilderAgent, Depends(inject_search_response_agent)],
             conversational_search_client: Annotated[ConversationalSearchClient, Depends(inject_conversational_search_api)],
             logger: Annotated[ContextLogger, Depends(inject_logger)]):
         """Store injected dependencies used to prepare and execute conversational search queries."""
         self.summarize_question_agent = summarize_question_agent
+        self.search_term_extraction_agent = search_term_extraction_agent
         self.conversational_search_client = conversational_search_client
         self.search_response_agent = search_response_agent
         self.logger = logger
 
-    def search(self, context:SearchContext) -> SearchContext:
+    def extract_search_term(self, context: SearchContext) -> SearchContext:
+        """Extract search term and detect if it's a new search.
+        
+        Returns:
+            Updated context with search_term and needs_reset flag set.
+        """
+        search_term, is_new_search = self.search_term_extraction_agent.invoke(context)
+        context.needs_reset = not context.is_first_call and is_new_search
+        context.search_term = search_term
+        return context
+
+    def search(self, context: SearchContext) -> SearchContext:
         """Execute the conversational search flow and enrich the provided context with results.
 
         Args:
@@ -40,36 +53,40 @@ class SearchManager:
         Raises:
             KeyError: When an attribute set referenced by a filter hypothesis is missing.
         """
+
         # no_question =  all([not request.ai_question.strip() for request in context.request_chain_results])
         # too_many_questions = any([message.type == "ai" for message in context.message_thread])
-        
+
         #if no_question or too_many_questions:
         total_count = 0
         
         # Launch the search (/!\ Only one product search hypothesis)
         items = []
-        api_response:FilteredSearchApiResponse = None
-        for product in context.request_chain_results:
-            attribute_set = next((attr for attr in context.attribute_sets if attr.attribute_set_id == product.attribute_set_id), None)
-            if not attribute_set:
-                raise KeyError(f"No attribute set found ({product.attribute_set_code})")
-            filters_dto = attribute_set.filters
+        api_response: FilteredSearchApiResponse = None
+        aggregations_dict: dict[str, FilterDto] = {}
+        
+        for dectected_chain in context.request_chain_results:
             api_response = self.conversational_search_client.search(
-                filter_detection_result=product,
-                filters_dto=filters_dto,
+                term=dectected_chain.search_term,
+                filters=dectected_chain.detected_filters,
                 context=context,
                 page_size=context.max_products
             )
             if api_response.code == 200:
                 items.extend(api_response.items)
                 total_count += api_response.total_count
+                for agg in api_response.aggregations:
+                    if agg.code not in aggregations_dict:
+                        aggregations_dict[agg.code] = agg
             else:
                 self.logger.info_context(api_response.message, context)
-            
+
             # Create an answer calling to the right agent (no products, or products)
 
         context.search_total_count = total_count
         context.search_result = items
+        context.search_available_filters = list(aggregations_dict.values())
+        
         # for response_strategy in self.search_response_agent_strategies:
         #     if response_strategy.apply(context):
         #         answer = response_strategy.invoke(context)

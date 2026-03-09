@@ -4,7 +4,7 @@ from fastapi import Depends
 
 from azure.cosmos import exceptions as cosmos_exceptions
 
-from domain.models import AttributeSetDto, AttributeFilterDto
+from domain.models import AttributeSetDto, AttributeFilterDto, FilterDto
 from domain.services.database import DatabaseAttributesSetupService
 
 from infrastructure.azure.services import CosmosDb
@@ -164,6 +164,42 @@ class CosmosDBAttributesSetupService(DatabaseAttributesSetupService):
 
         # Reconstruct DTOs
         return [AttributeFilterDto.from_dto(it) for it in items]
+    
+    def get_all_filters(self) -> List[FilterDto]:
+        """
+        Get all filters from the filters container, grouped by code with deduplicated options.
+
+        Todo pigau: update db structure to avoid the foreach
+        """
+        filters_container = self.filters_database.get_container()
+
+        query = "SELECT * FROM c"
+        items = list(filters_container.query_items(query=query, parameters=None, enable_cross_partition_query=True))
+
+        # Group by code and merge options
+        grouped: dict[str, dict] = {}
+        for item in items:
+            code = item.get("code")
+            if code not in grouped:
+                grouped[code] = {
+                    "attribute_id": item.get("attribute_id"),
+                    "label": item.get("label"),
+                    "code": code,
+                    "type": item.get("type"),
+                    "description": item.get("description"),
+                    "options": []
+                }
+            
+            # Deduplicate and merge options
+            existing_options = grouped[code]["options"]
+            new_options = item.get("options", [])
+            
+            for opt in new_options:
+                if opt not in existing_options:
+                    existing_options.append(opt)
+        
+        # Reconstruct DTOs from grouped data
+        return [FilterDto.from_dto(grouped_item) for grouped_item in grouped.values()]
     
     def build_dto(self, item:dict, filters:List[AttributeFilterDto]):
         return AttributeSetDto(

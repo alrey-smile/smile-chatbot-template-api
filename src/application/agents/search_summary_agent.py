@@ -42,7 +42,7 @@ class SearchSummaryAgent:
         prompt_template = self.prompt_provider.get_prompt()
         
         # Build the question string that the prompt expects
-        question = f"Summarize a search for {context.detected_attribute_set.product} with filters: {filters_summary}"
+        question = f"Provide a short summary of a search for {context.search_term} with filters: {filters_summary} that will complete naturaly your last reponse: {context.ai_answer}"
         
         # Use partial() to pre-fill the question variable
         prompt_template = prompt_template.partial(

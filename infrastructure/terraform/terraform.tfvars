@@ -1,7 +1,7 @@
 resource_group_name     = "maya-dev-rg"
 location                = "francecentral"
 app_service_name        = "maya-dev-api"
-python_version          = "3.10"
+python_version          = "3.11"
 openai_account_name     = "maya-dev-openai"
 cosmos_db_account_name  = "maya-dev-cosmos-db"
 app_insights_name       = "maya-dev-ais"

@@ -19,13 +19,13 @@ class CosmosDbRequestService(DatabaseRequestService):
             settings=settings
         )
 
-    def create_request(self, user_id:str, session_id:str, attribute_id:int, data:dict) -> UserRequestDto:
+    def create_request(self, user_id:str, session_id:str, search_term:str, data:dict) -> UserRequestDto:
         new_id = str(uuid.uuid4())
         request = UserRequestDto(
             id=new_id,
             user_id=user_id,
             session_id=session_id,
-            attribute_id=attribute_id,
+            search_term=search_term,
             data=data
         )
         doc = request.to_dict()
@@ -39,7 +39,7 @@ class CosmosDbRequestService(DatabaseRequestService):
     def get_requests(self, user_id:str, session_id:str) -> List[UserRequestDto]:
         # Because partition key is user_id, pass partition_key=user_id to avoid cross-partition queries.
         query = """
-        SELECT c.id, c.user_id, c.session_id, c.attribute_id, c.data
+        SELECT c.id, c.user_id, c.session_id, c.search_term, c.data
         FROM c
         WHERE c.session_id = @session_id
         """

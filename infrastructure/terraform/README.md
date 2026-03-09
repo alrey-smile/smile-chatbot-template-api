@@ -7,7 +7,7 @@ This Terraform configuration deploys the complete Azure infrastructure for the a
 This deployment creates the following Azure resources:
 
 ### Core Services
-- **App Service** (`maya-dev-api`) - Python 3.10 web application with managed identity
+- **App Service** (`maya-dev-api`) - Python 3.11 web application with managed identity
 - **App Service Plan** - Basic B1 tier (Linux)
 - **Application Insights** (`maya-dev-ais`) - Monitoring and telemetry
 - **Key Vault** (`maya-dev-kv`) - Secure secrets management

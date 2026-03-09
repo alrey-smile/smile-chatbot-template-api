@@ -23,6 +23,9 @@ from .attribute_filter_definition import AttributeFilterDefinition
 from .elastic_suite_attribute_set import ElasticSuiteAttributeSet
 from .api_param import ApiParam
 from .attribute_set_api_param import AttributeSetApiParam
+from .filter_definition import FilterDefinition
+from .filter_dto import FilterDto
+from .filter_value import FilterValue
 from .filter_option_dto import FilterOptionDto
 from .attribute_filter_dto import AttributeFilterDto
 from .attribute_set_dto import AttributeSetDto
@@ -60,6 +63,9 @@ __all__ = [
     "SearchScoringProfile",
     "IndexFilterResult",
     "ApiResponse",
+    "FilterDefinition",
+    "FilterDto",
+    "FilterValue",
     "FilterOptionDto",
     "AttributeFilterDto",
     "ApiParam",

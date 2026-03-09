@@ -90,6 +90,17 @@ class ConversationManager:
             products=context.search_result
         ))
         self.logger.debug_context(f"New AI message inserted: {context.ai_answer}", context)
+    
+    def reset_search_session(self, context: SearchContext) -> SearchContext:
+        """Reset the search session: new thread, clear requests, re-summarize."""
+        context.session_id = None
+        context.requests = []
+        
+        context = self.insert_or_create_thread(context)
+        context = self.summarize_exchange(context)
+        
+        self.logger.info_context(f"New search detected. Reset session to {context.session_id}", context)
+        return context
             
     # PRIVATE 
 

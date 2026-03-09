@@ -72,11 +72,14 @@ class Settings(BaseSettings):
     # Elastic suite
     langsmith_attribute_set_extraction_prompt_name:str # Name of the prompt for attribute extraction from user request
     langsmith_filters_extraction_prompt_name:str # Name of the prompt for filters extraction from a user request
+    langsmith_filters_detection_prompt_name:str # Name of the prompt for filter detection from user request
+    langsmith_filters_value_extraction_prompt_name:str # Name of the prompt for filter value extraction
     langsmith_elastic_suite_question_summarizer_prompt_name:str # Name of the prompt for user question summarization
     langsmith_empty_search_response_builder_prompt_name:str # Name of the prompt for empty response (no product found) generation
     langsmith_not_empty_search_response_builder_prompt_name:str # Name of the prompt for NOT empty response (some product found) generation
     langsmith_chit_chat_prompt_name:str # Name of the prompt for detecting Chit-Chat exchanges
     langsmith_search_summary_prompt_name: str # Name of the prompt for search summary
+    langsmith_search_term_extraction_prompt_name: str # Name of the prompt for search summary
 
     elasticsuite_search_response_builder_prompt_name:str
 
@@ -87,6 +90,7 @@ class Settings(BaseSettings):
     # Search
     elastic_suite_search_api_base_url:str # Elastic Suite search API base URL
     elastic_suite_search_api_credentials:str # Elastic Suite search API credentials
+    elasticsuite_magento_store_code: str # ElasticSuite magento store code
 
     rag_k: int = 3 
     rag_score_threshold: float = 0.8

@@ -3,11 +3,9 @@ from abc import abstractmethod
 
 from domain.api_client import BaseClient
 from domain.models import (
-    FilteredSearchApiResponse, 
-    AttributeFilterValue, 
-    ProductFilterDetectionResult, 
-    AttributeFilterDto,
-    BaseContext
+    FilterValue,
+    SearchApiResponse, 
+    BaseContext,
 )
 
 class ConversationalSearchClient(BaseClient):
@@ -22,12 +20,9 @@ class ConversationalSearchClient(BaseClient):
     @abstractmethod
     def search(
             self, 
-            filter_detection_result:ProductFilterDetectionResult,
-            filters_dto:List[AttributeFilterDto],
-            #attribute_set:str, 
-            #term:str,
-            #filters:List[AttributeFilterValue], 
-            context:BaseContext,
-            page_size:int
-        ) -> FilteredSearchApiResponse:
+            context: BaseContext,
+            term: str,
+            filters: List[FilterValue], 
+            page_size: int,
+        ) -> SearchApiResponse:
         pass
